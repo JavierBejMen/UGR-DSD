@@ -1,0 +1,35 @@
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>Sensors</title>
+		<link rel="stylesheet" href="estilos.css">
+	</head>
+	<body>
+		<div class="form">
+			<label for="value_t">Temperatura:</label><input id="value_t" type='number'/> 
+			<button onClick="sendDataTemperature()"> Send </button>
+		</div>
+		<div class="form">
+			<label for="value_h">Humedad:</label><input id="value_h" type='number' step="0.01" min="0" max="1"/> 
+			<button onClick="sendDataHumidity()"> Send </button>
+		</div>
+	<script src="http://localhost:8080/socket.io/socket.io.js"></script>
+	<script type="text/javascript">
+		var serviceURL = document.URL;
+		ns_sensor_uri = serviceURL.replace("sensor.html",'sensors');
+		console.log(ns_sensor_uri);
+		socket = io.connect(ns_sensor_uri);
+		
+
+		function sendDataTemperature(){
+			let data = document.getElementById('value_t').value;
+			console.log(data);
+			socket.emit('put-sensor-data-temp',{temperature:data});
+	    }
+	    function sendDataHumidity(){
+			let data = document.getElementById('value_h').value;
+			console.log(data);
+			socket.emit('put-sensor-data-humidity',{humidity:data});
+	    }
+	</script>
+</html>

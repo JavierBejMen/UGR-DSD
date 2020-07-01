@@ -1,0 +1,149 @@
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>Domótica App</title>
+		<link rel="stylesheet" href="estilos.css">
+	</head>
+	<body>
+		<div class="container" id="temperature-container">
+			<div class="title">
+				<h3> Temperature </h3>
+			</div>
+			<div class="data-update" id="data-update-temperature">
+				<p></p>
+			</div>
+			<div class="form">
+				<label for="max_h">Max:</label><input id="max_t" type='number'> 
+				<label for="min_h">Min</label><input id="min_t" type='number'>
+				<input type='submit' onClick="emitTempPlan()" value="Send plan">
+				<input type='submit' onClick="agentAction('temperature-action','on')" value="Air conditioner on">
+				<input type='submit' onClick="agentAction('temperature-action','off')" value="Air conditioner off">
+				<input type='submit' onClick="wakeAgentUp('temperature-action')" value="Wake temperature agent up">
+			</div>
+		</div>
+		<div class="container" id="humidity-container">
+			<div class="title">
+				<h3> Humidity </h3>
+			</div>
+			<div class="data-update" id="data-update-humidity">
+				<p></p>
+			</div>
+			<div class="form">
+				<label for="max_h">Max:</label><input id="max_h" type='number' step="0.01" min="0" max="1"> 
+				<label for="min_h">Min</label><input id="min_h" type='number' step="0.01" min="0" max="1">
+				<input type='submit' onClick="emitHumPlan()" value="Send plan">
+				<input type='submit' onClick="agentAction('humidity-action','on')" value="Humidifier on">
+				<input type='submit' onClick="agentAction('humidity-action','off')" value="Humidifier off">
+				<input type='submit' onClick="wakeAgentUp('humidity-action')" value="Wake humidity agent up">
+			</div>
+		</div>
+	</body>
+	<script src="http://localhost:8080/socket.io/socket.io.js"></script>
+	<script type="text/javascript">
+		function dataUpdate(data){
+			var listContainer = null;
+			let deviceState = "";
+			if(data.agent == "temperature"){
+				listContainer = document.getElementById('data-update-temperature');
+				listContainer.innerHTML += 'Temperature ';
+				deviceState = ', air conditioner: ' + ((data.airConditioner)? 'On':'Off') + ')<br>';
+			}else if(data.agent == "humidity"){
+				listContainer = document.getElementById('data-update-humidity');
+				listContainer.innerHTML += 'Humidity ';
+				deviceState = ', humidifier: ' + ((data.humidifier)? 'On':'Off') + ')<br>';	
+			}
+			listContainer.innerHTML += 'update: ' + data.current_value + ' (Agent:' + (data.agent_state? 'On':'Off') + deviceState;
+	    }
+
+	    function emitTempPlan(){
+	    	let max = document.getElementById('max_t').value;
+	    	let min = document.getElementById('min_t').value;
+	    	socket.emit('temperature-action',{'plan':{'max':max,'min':min}});
+	    }
+
+	   	function emitHumPlan(){
+	    	let max = document.getElementById('max_h').value;
+	    	let min = document.getElementById('min_h').value;
+	    	socket.emit('humidity-action',{'plan':{'max':max,'min':min}});
+	    }
+
+	    function wakeAgentUp(event){
+	    	console.log("Emitimos el evento " + event);
+	    	socket.emit(event,{'reactivate-agent':true});
+	    }
+
+	    function agentAction(event, action){
+	    	socket.emit(event,{'action':action});
+	    }
+	    
+		var serviceURL = document.URL;
+		ns_client_uri = serviceURL.replace("cliente.html",'clients');
+		console.log(ns_client_uri);
+		socket = io.connect(ns_client_uri);
+		
+		socket.on('welcome',function(data){
+			let tempContainer = document.getElementById('data-update-temperature');
+			let humContainer = document.getElementById('data-update-humidity');
+			document.getElementById('max_t').value = data.temperature.plan.max;
+			document.getElementById('min_t').value = data.temperature.plan.min;
+			document.getElementById('max_h').value = data.humidity.plan.max;
+			document.getElementById('min_h').value = data.humidity.plan.min;
+			tempContainer.innerHTML += "Welcome! Agent: " + ((data.temperature.agent)? 'On ':'Off ') + ', air conditioner: ' + ((data.temperature.airConditioner)? 'On':'Off') + '<br>';
+			humContainer.innerHTML += "Welcome! Agent: " + ((data.humidity.agent)? 'On ':'Off ') + ', humidifier: ' + ((data.humidity.humidifier)? 'On':'Off') + '<br>';
+		});
+		socket.on('new-temperature-plan', function(data) {
+			let tempContainer = document.getElementById('data-update-temperature');
+			tempContainer.innerHTML += data.msg + '<br>';
+		});
+
+		socket.on('new-humidity-plan', function(data) {
+			let humContainer = document.getElementById('data-update-humidity');
+			humContainer.innerHTML += data.msg + '<br>';
+		});
+
+		socket.on('temperature-agent-state', function(data){
+			let tempContainer = document.getElementById('data-update-temperature');
+			tempContainer.innerHTML += data.msg + '<br>';
+		});
+
+		socket.on('humidity-agent-state', function(data){
+			let humContainer = document.getElementById('data-update-humidity');
+			humContainer.innerHTML += data.msg + '<br>';
+		});
+		
+		socket.on('temperature-update', function(data){
+			dataUpdate(data);
+		});
+
+		socket.on('humidity-update', function(data){
+			dataUpdate(data);
+		});
+
+		socket.on('agent-state',function(data){
+			var listContainer = null;
+			if(data.agent == "temperature"){
+				listContainer = document.getElementById('data-update-temperature');
+				listContainer.innerHTML += data.msg + '<br>';
+			}else if(data.agent == "humidity"){
+				listContainer = document.getElementById('data-update-humidity');
+				listContainer.innerHTML += data.msg+ '<br>';
+			}
+		});
+	</script>
+</html>
+
+			<!--var d = new Date();
+			socket.emit('poner', {host:data.host, port:data.port, time:d});
+			socket.emit('obtener', {host: data.address});
+		socket.on('update', function(data) {
+			actualizarLista(data);
+		});
+
+
+		socket.on('disconnect', function() {
+			actualizarLista({});
+		});
+
+
+
+			-->
